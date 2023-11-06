@@ -6,7 +6,7 @@ from PIL import Image, ExifTags
 from werkzeug.utils import secure_filename
 import tensorflow_hub as hub
 import tensorflow as tf
-
+import io
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'outputs'
@@ -122,6 +122,14 @@ def style_transfer(content_path, style_path):
 
 def load_img(path_to_img):
     img = tf.io.read_file(path_to_img)
+    if path_to_img.lower().endswith('.webp'):  # Check if the file is a WEBP
+        # Convert WEBP to JPEG in-memory
+        with Image.open(io.BytesIO(img.numpy())) as image:
+            with io.BytesIO() as jpeg_io:
+                image.convert('RGB').save(jpeg_io, 'JPEG')
+                jpeg_io.seek(0)
+                img = jpeg_io.read()
+
     img = tf.image.decode_image(img, channels=3)
     img = tf.image.convert_image_dtype(img, tf.float32)
     img = img[tf.newaxis, :]
